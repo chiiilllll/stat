@@ -1,0 +1,132 @@
+---
+title: "HW1"
+date: today
+author: H24106036李祐君
+format:
+ pdf:
+    include-in-header:
+      - text: |
+         \usepackage{setspace,relsize}
+mainfont: "Microsoft JhengHei UI"
+toc: true
+---
+
+# Read data
+
+```{r}
+library(palmerpenguins)
+data <- penguins_raw
+head(data)
+```
+
+# Summary Staistic  
+
+## Missing Values
+
+```{r}
+#| output: asis
+library(DataExplorer)
+plot_missing(data)
+```
+
+我們得知在comments項有非常多的缺失值
+
+## summary for whole data 
+
+使用三種方法
+了解每個特徵的類別及分布情況
+```{r}
+#| output: asis
+library(Hmisc)
+latex(describe(data), file = "", caption.placement = "top")
+library(pander)
+pander(summary(data))
+library(summarytools)
+dfSummary(data)
+```
+
+總共有344筆資料且有17個特徵，有些是類別型資料，有些則是連續型資料
+
+大略瀏覽整體資料，接下來再細部觀察各個特徵並畫圖
+
+## Observe and Plot some interesting features(in my opinion)
+
+### discrete(category) data
+From above, we can see that we have three different species and island,but it just have one region and stage.
+
+```{r}
+table(data$Species)
+barplot(table(data$Species), main = "Bar Plot of Species",xlab = "Species", ylab = "count", col = "aliceblue", 
+        cex.names = 0.45)
+table(data$Island)
+barplot(table(data$Island), main = "Bar Plot of Island",xlab = "Island", ylab = "count", col = "aliceblue")
+table(data$`Clutch Completion`)
+barplot(table(data$`Clutch Completion`), main = "Bar Plot of Clutch Completion",xlab = "Clutch Completion", ylab = "count", col = "aliceblue")
+```
+
+### continuous data
+```{r}
+summary(data$`Culmen Length (mm)`)
+hist(data$`Culmen Length (mm)`,xlab="Culmen Length", ylab = "count",col="skyblue")
+abline(v=43.92,col="red")
+summary(data$`Culmen Depth (mm)`)
+hist(data$`Culmen Depth (mm)`,xlab="Culmen Depth", ylab = "count",col="skyblue")
+abline(v=17.15,col="red")
+summary(data$`Flipper Length (mm)`)
+hist(data$`Flipper Length (mm)`,xlab="Flipper Length", ylab = "count",col="skyblue")
+abline(v=200.9,col="red")
+summary(data$`Body Mass (g)`)
+hist(data$`Body Mass (g)`,xlab="Body Mass", ylab = "count",col="skyblue")
+abline(v=4202,col="red")
+```
+
+看連續型資料相關性
+```{r}
+layout(matrix(c(1,2,3,4,5,6),2,3))
+plot(data$`Culmen Length (mm)`,data$`Culmen Depth (mm)`)
+plot(data$`Culmen Length (mm)`,data$`Flipper Length (mm)`)
+plot(data$`Culmen Length (mm)`,data$`Body Mass (g)`)
+plot(data$`Culmen Depth (mm)`,data$`Flipper Length (mm)`)
+plot(data$`Culmen Depth (mm)`,data$`Body Mass (g)`)
+plot(data$`Flipper Length (mm)`,data$`Body Mass (g)`)
+```
+
+我們會發現這些資料幾乎都呈正相關，且有些有分群現象的感覺
+
+因此我們將分群因素考慮再重新畫幾張分布圖
+
+## groupby species
+
+```{r}
+par(mfrow = c(1, 1))
+library(table1)
+library(kableExtra)
+t1 <- table1(~ `Culmen Length (mm)` + `Culmen Depth (mm)` + 
+              `Flipper Length (mm)` + `Body Mass (g)` | Species, data)
+# Output to PDF with LaTeX formatting
+kable(as.data.frame(t1), "latex", booktabs = TRUE, align = "c") %>%
+  kable_styling(latex_options = c("striped", "hold_position", "scale_down")) %>%
+  row_spec(0, bold = TRUE)
+
+library(ggplot2)
+ggplot(data = data, aes(x = `Culmen Length (mm)`, fill = as.factor(Species))) +        
+  geom_density(alpha=0.1)+
+      labs(title="Density plot", 
+          subtitle="# Culmen Length Distribution")
+ggplot(data = data, aes(x = `Culmen Depth (mm)`, fill = as.factor(Species))) +        
+  geom_density(alpha=0.1)+
+      labs(title="Density plot", 
+          subtitle="# Culmen Depth Distribution")
+ggplot(data = data, aes(x = `Flipper Length (mm)`, fill = as.factor(Species))) +        
+  geom_density(alpha=0.1)+
+      labs(title="Density plot", 
+          subtitle="# Flipper Length Distribution")
+ggplot(data = data, aes(x = `Body Mass (g)`, fill = as.factor(Species))) +        
+  geom_density(alpha=0.1)+
+      labs(title="Density plot", 
+          subtitle="# Body Mass Distribution")
+```
+
+我們可以發現Gentoo這個品種的企鵝跟另外兩種在我們擁有資料的這幾個特徵上有較顯著的差異
+
+僅culmen length 是 Adelie企鵝與另外兩種差異較大
